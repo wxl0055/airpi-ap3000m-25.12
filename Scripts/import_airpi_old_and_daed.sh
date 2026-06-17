@@ -65,8 +65,8 @@ echo "===== Airpi import: relocate Airpi GPIO fan kernel package ====="
 mkdir -p package/kernel
 rm -rf package/kernel/Airpi-gpio-fan
 
-if [ -d "$DST_DIR/Airpi-gpio-fan" ]; then
-  mv "$DST_DIR/Airpi-gpio-fan" package/kernel/Airpi-gpio-fan
+if [ -d "package/kernel/Airpi-gpio-fan" ]; then
+  mv "package/kernel/Airpi-gpio-fan" package/kernel/Airpi-gpio-fan
 fi
 
 if [ ! -f package/kernel/Airpi-gpio-fan/Makefile ]; then
