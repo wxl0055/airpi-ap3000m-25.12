@@ -17,9 +17,120 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
+  preflight:
+    name: Airpi preflight only
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout config repository
+        uses: actions/checkout@v4
+
+      - name: Install minimal preflight dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git python3 unzip ca-certificates rsync
+
+      - name: Clone source for preflight
+        run: |
+          rm -rf wrt
+          git clone --depth 1 --filter=blob:none --sparse -b 25.12 https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git wrt
+          cd wrt
+          git sparse-checkout set .github config defconfig include package scripts target feeds.conf.default Makefile rules.mk Config.in
+
+      - name: Run Airpi import and defconfig preflight
+        run: |
+          cd wrt
+
+          echo "===== preflight: import old MTK packages and daed feed ====="
+          bash "$GITHUB_WORKSPACE/Scripts/import_airpi_old_and_daed.sh"
+
+          echo "===== preflight: minimal feeds update/install ====="
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a -p qmodem || true
+          ./scripts/feeds install -a -p daede || true
+          ./scripts/feeds install luci luci-base luci-compat luci-app-firewall || true
+          ./scripts/feeds install luci-app-ttyd luci-app-upnp luci-app-autoreboot || true
+          ./scripts/feeds install luci-app-diskman luci-app-filemanager luci-app-package-manager || true
+          ./scripts/feeds install luci-app-argon-config luci-theme-argon luci-theme-bootstrap || true
+
+          echo "===== preflight: target config ====="
+          if [ -f defconfig/mt7981-ax3000.config ]; then
+            cp -f defconfig/mt7981-ax3000.config .config
+          else
+            : > .config
+          fi
+
+          cat >> .config <<'EOF'
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_filogic=y
+CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y
+CONFIG_CCACHE=y
+
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-base=y
+CONFIG_PACKAGE_luci-compat=y
+CONFIG_PACKAGE_luci-app-firewall=y
+
+CONFIG_PACKAGE_qmodem=y
+CONFIG_PACKAGE_luci-app-qmodem-next=y
+
+CONFIG_PACKAGE_luci-app-Airpifanctrl=y
+CONFIG_PACKAGE_kmod-Airpi-gpio-fan=y
+CONFIG_PACKAGE_luci-app-mtk=y
+CONFIG_PACKAGE_luci-app-mtwifi-cfg=y
+CONFIG_PACKAGE_mtwifi-cfg-ucode=y
+CONFIG_PACKAGE_luci-app-eqos-mtk=y
+CONFIG_PACKAGE_luci-app-turboacc-mtk=y
+
+CONFIG_PACKAGE_daed=y
+CONFIG_PACKAGE_luci-app-daede=y
+
+# CONFIG_PACKAGE_luci-app-openclash is not set
+# CONFIG_PACKAGE_luci-app-istorex is not set
+# CONFIG_PACKAGE_luci-app-istore is not set
+# CONFIG_PACKAGE_luci-app-store is not set
+# CONFIG_PACKAGE_luci-app-aurora-config is not set
+# CONFIG_PACKAGE_luci-theme-aurora is not set
+EOF
+
+          echo "===== preflight: make defconfig ====="
+          make defconfig
+
+          echo "===== preflight: Airpi fan visibility ====="
+          grep -Ein "Airpifanctrl|airpifanctrl|Airpi-gpio-fan|airpi-gpio-fan" .config tmp/.config-package.in 2>/dev/null || true
+          find package/kernel/Airpi-gpio-fan package/airpi-mtk-applications/luci-app-Airpifanctrl -maxdepth 5 -type f 2>/dev/null | sort || true
+
+          echo "===== preflight: required config check ====="
+          for sym in \
+            CONFIG_PACKAGE_luci-app-Airpifanctrl \
+            CONFIG_PACKAGE_kmod-Airpi-gpio-fan \
+            CONFIG_PACKAGE_luci-app-mtk \
+            CONFIG_PACKAGE_luci-app-mtwifi-cfg \
+            CONFIG_PACKAGE_luci-app-eqos-mtk \
+            CONFIG_PACKAGE_luci-app-turboacc-mtk \
+            CONFIG_PACKAGE_qmodem \
+            CONFIG_PACKAGE_luci-app-qmodem-next \
+            CONFIG_PACKAGE_daed \
+            CONFIG_PACKAGE_luci-app-daede
+          do
+            if ! grep -q "^${sym}=y$" .config; then
+              echo "ERROR: required config not enabled: ${sym}"
+              exit 1
+            fi
+          done
+
+          echo "===== preflight: forbidden package check ====="
+          if grep -E '^CONFIG_PACKAGE_luci-app-(openclash|istorex|istore|store|aurora-config)=y$|^CONFIG_PACKAGE_luci-theme-aurora=y$' .config; then
+            echo "ERROR: forbidden package enabled"
+            exit 1
+          fi
+
+          echo "OK: Airpi preflight passed"
+
+
   build:
     runs-on: ubuntu-22.04
 
+    needs: preflight
     steps:
       - name: Checkout airpi_cli
         uses: actions/checkout@v4
