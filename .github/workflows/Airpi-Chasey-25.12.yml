@@ -116,3 +116,28 @@ jobs:
         with:
           name: Airpi-qmodem-chasey-25.12
           path: artifact/
+
+      - name: Verify Airpi package manifest
+        if: always()
+        run: |
+          echo "===== find manifest ====="
+          find wrt/bin/targets -name '*airpi_ap3000m*.manifest' -print | tee /tmp/airpi_manifest_files.txt || true
+
+          MANIFEST="$(head -n1 /tmp/airpi_manifest_files.txt)"
+          if [ -z "$MANIFEST" ]; then
+            echo "WARN: manifest not found yet"
+            exit 0
+          fi
+
+          echo "===== required packages ====="
+          grep -E 'luci-app-Airpifanctrl|kmod-Airpi-gpio-fan|luci-app-mtk|mii_mgr|switch|luci-app-mtwifi-cfg|luci-app-eqos-mtk|luci-app-turboacc-mtk|qmodem|luci-app-qmodem-next|daed|luci-app-daede' "$MANIFEST" || {
+            echo "ERROR: required package missing from manifest"
+            exit 1
+          }
+
+          echo "===== forbidden packages ====="
+          if grep -E 'luci-app-openclash|luci-app-istorex|luci-app-istore|luci-app-store|luci-theme-aurora' "$MANIFEST"; then
+            echo "ERROR: forbidden package found in manifest"
+            exit 1
+          fi
+
