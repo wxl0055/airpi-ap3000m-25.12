@@ -30,8 +30,35 @@ fi
 echo
 echo "===== feeds update/install ====="
 ./scripts/feeds update -a
-./scripts/feeds install -a
-./scripts/feeds install -a -p qmodem || true
+echo "===== feeds install: selected packages only ====="
+
+# Do not use "./scripts/feeds install -a" here.
+# Only link packages needed by this Airpi build.
+
+./scripts/feeds install \
+  luci luci-base luci-compat luci-mod-admin-full luci-app-firewall \
+  luci-app-ttyd luci-app-upnp luci-app-autoreboot \
+  luci-app-diskman luci-app-filemanager luci-app-package-manager \
+  luci-app-argon-config luci-theme-argon luci-theme-bootstrap \
+  luci-app-mtk luci-app-mtwifi-cfg luci-app-eqos-mtk luci-app-turboacc-mtk \
+  wrtbwmon luci-app-wrtbwmon \
+  || true
+
+./scripts/feeds install \
+  qmodem luci-app-qmodem-next luci-app-qmodem \
+  ubus_at_daemon tom_modem sms-tool_q modem_scan qmodem_monitor \
+  quectel_QMI_WWAN simcom_QMI_WWAN quectel_MHI qfirehose quectel_CM_5G_M \
+  sms_forwarder_next sms_forwarder \
+  luci-app-qmodem-monitor luci-app-qmodem-sms luci-app-qmodem-mwan luci-app-qmodem-ttl luci-app-qmodem-ttlfw4 \
+  || true
+
+./scripts/feeds install \
+  dae daed luci-app-dae luci-app-daed luci-app-daede \
+  dae-geoip dae-geosite daed-geoip daed-geosite \
+  || true
+
+echo "===== feeds install: selected packages done ====="
+
 
 # ------------------------------------------------------------
 # Base target config

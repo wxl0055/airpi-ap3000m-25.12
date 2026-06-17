@@ -167,7 +167,6 @@ fi
 
 echo "===== Airpi import: update/install daed feed ====="
 ./scripts/feeds update daede
-./scripts/feeds install -a -p daede
 
 echo "===== Airpi import: required package directories check ====="
 for d in \
