@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "============================================================"
+echo " Apply Airpi chasey 25.12 full qmodem config"
+echo "============================================================"
+
+# This script runs inside chasey-dev/immortalwrt-mt798x-rebase source root.
+
+# ------------------------------------------------------------
+# Add QModem feed
+# ------------------------------------------------------------
+if ! grep -q 'FUjr/QModem' feeds.conf.default; then
+  echo 'src-git qmodem https://github.com/FUjr/QModem.git;main' >> feeds.conf.default
+fi
+
+echo
+echo "===== feeds update/install ====="
+./scripts/feeds update -a
+./scripts/feeds install -a
+./scripts/feeds install -a -p qmodem || true
+
+# ------------------------------------------------------------
+# Base target config
+# ------------------------------------------------------------
+echo
+echo "===== target config ====="
+
+if [ -f defconfig/mt7981-ax3000.config ]; then
+  cp -f defconfig/mt7981-ax3000.config .config
+else
+  : > .config
+fi
+
+cat >> .config <<'EOC'
+
+# ===== Airpi AP3000M target =====
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_filogic=y
+CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y
+
+# ===== LuCI base =====
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-base=y
+CONFIG_PACKAGE_luci-compat=y
+CONFIG_PACKAGE_luci-theme-bootstrap=y
+CONFIG_PACKAGE_luci-theme-argon=y
+
+# ===== Keep old Airpi-qmodem plugin set minus removed items =====
+CONFIG_PACKAGE_luci-app-Airpifanctrl=y
+CONFIG_PACKAGE_luci-app-argon-config=y
+CONFIG_PACKAGE_luci-app-aurora-config=y
+CONFIG_PACKAGE_luci-app-autoreboot=y
+CONFIG_PACKAGE_luci-app-bandix=y
+CONFIG_PACKAGE_luci-app-diskman=y
+CONFIG_PACKAGE_luci-app-eqos-mtk=y
+CONFIG_PACKAGE_luci-app-filemanager=y
+CONFIG_PACKAGE_luci-app-firewall=y
+CONFIG_PACKAGE_luci-app-mtwifi-cfg=y
+CONFIG_PACKAGE_luci-app-package-manager=y
+CONFIG_PACKAGE_luci-app-qmodem-next=y
+CONFIG_PACKAGE_luci-app-quickstart=y
+CONFIG_PACKAGE_luci-app-ttyd=y
+CONFIG_PACKAGE_luci-app-turboacc-mtk=y
+CONFIG_PACKAGE_luci-app-upnp=y
+CONFIG_PACKAGE_luci-app-wolplus=y
+CONFIG_PACKAGE_luci-app-wrtbwmon=y
+CONFIG_PACKAGE_luci-app-xfrpc=y
+
+CONFIG_PACKAGE_qmodem=y
+
+# ===== Explicitly removed =====
+# CONFIG_PACKAGE_luci-app-openclash is not set
+# CONFIG_PACKAGE_luci-app-istorex is not set
+# CONFIG_PACKAGE_luci-app-istore is not set
+# CONFIG_PACKAGE_luci-app-store is not set
+# CONFIG_PACKAGE_luci-theme-aurora is not set
+
+EOC
+
+# Hard-remove unwanted packages inherited from base config
+sed -i \
+  -e '/CONFIG_PACKAGE_luci-app-openclash[= ]/d' \
+  -e '/CONFIG_PACKAGE_luci-app-istorex[= ]/d' \
+  -e '/CONFIG_PACKAGE_luci-app-istore[= ]/d' \
+  -e '/CONFIG_PACKAGE_luci-app-store[= ]/d' \
+  -e '/CONFIG_PACKAGE_luci-theme-aurora[= ]/d' \
+  .config
+
+cat >> .config <<'EOC'
+# CONFIG_PACKAGE_luci-app-openclash is not set
+# CONFIG_PACKAGE_luci-app-istorex is not set
+# CONFIG_PACKAGE_luci-app-istore is not set
+# CONFIG_PACKAGE_luci-app-store is not set
+# CONFIG_PACKAGE_luci-theme-aurora is not set
+EOC
+
+echo
+echo "===== make defconfig ====="
+make defconfig
+
+echo
+echo "===== selected package check ====="
+grep -E '^CONFIG_PACKAGE_luci-app-(Airpifanctrl|argon-config|aurora-config|autoreboot|bandix|diskman|eqos-mtk|filemanager|firewall|mtwifi-cfg|package-manager|qmodem-next|quickstart|ttyd|turboacc-mtk|upnp|wolplus|wrtbwmon|xfrpc)=y$|^CONFIG_PACKAGE_luci-theme-(argon|bootstrap)=y$|^CONFIG_PACKAGE_qmodem=y$' .config || true
+
+echo
+echo "===== removed package check ====="
+if grep -E '^CONFIG_PACKAGE_luci-app-(openclash|istorex|istore|store)=y$|^CONFIG_PACKAGE_luci-theme-aurora=y$' .config; then
+  echo "ERROR: unwanted package still selected"
+  exit 1
+fi
+
+echo
+echo "Airpi chasey 25.12 package config applied."

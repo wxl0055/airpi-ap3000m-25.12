@@ -1,0 +1,79 @@
+name: Airpi Chasey 25.12 QModem
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '18 20 * * *'
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_REPO: https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git
+  SOURCE_BRANCH: 25.12
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout airpi_cli
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext \
+            gcc-multilib g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 \
+            libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev \
+            libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool \
+            libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full \
+            patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools \
+            qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl \
+            unzip vim wget xmlto xxd zlib1g-dev zstd
+
+      - name: Clone chasey-dev 25.12
+        run: |
+          git clone -b "$SOURCE_BRANCH" --single-branch --filter=blob:none "$SOURCE_REPO" wrt
+          cd wrt
+          echo "===== source commit ====="
+          git log -1 --oneline
+
+      - name: Copy Airpi overlay files
+        run: |
+          mkdir -p wrt/files
+          cp -rf files/* wrt/files/
+
+      - name: Apply Airpi qmodem 25.12 full config
+        working-directory: wrt
+        run: |
+          bash "$GITHUB_WORKSPACE/Scripts/apply_chasey_25_12_full.sh"
+
+      - name: Download sources
+        working-directory: wrt
+        run: |
+          make download -j8 || make download -j1 V=s
+
+      - name: Build firmware
+        working-directory: wrt
+        run: |
+          make -j"$(nproc)" || make -j1 V=s
+
+      - name: Collect firmware
+        if: always()
+        run: |
+          mkdir -p artifact
+          if [ -d wrt/bin/targets ]; then
+            find wrt/bin/targets -type f \( -name '*.bin' -o -name '*.img' -o -name '*.itb' -o -name '*.manifest' -o -name '*.buildinfo' -o -name '*.json' \) -print -exec cp -f {} artifact/ \;
+          fi
+          echo "===== artifact files ====="
+          ls -lah artifact || true
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Airpi-qmodem-chasey-25.12
+          path: artifact/

@@ -1,0 +1,206 @@
+#!/bin/sh
+set -eu
+
+BOARD="$(cat /tmp/sysinfo/board_name 2>/dev/null || true)"
+[ "$BOARD" = "airpi,ap3000m" ] || exit 0
+
+echo "[Airpi] applying old firmware network/qmodem/wifi defaults"
+
+# ------------------------------------------------------------
+# System
+# ------------------------------------------------------------
+uci set system.@system[0].hostname='Airpi' 2>/dev/null || true
+
+# ------------------------------------------------------------
+# LAN: old firmware compatible
+# ------------------------------------------------------------
+uci -q batch <<'EOC'
+set network.lan=interface
+set network.lan.device='br-lan'
+set network.lan.proto='static'
+set network.lan.ipaddr='192.168.88.1'
+set network.lan.netmask='255.255.255.0'
+set network.lan.ip6assign='60'
+
+set dhcp.lan=dhcp
+set dhcp.lan.interface='lan'
+set dhcp.lan.start='100'
+set dhcp.lan.limit='150'
+set dhcp.lan.leasetime='12h'
+set dhcp.lan.dhcpv4='server'
+set dhcp.lan.dhcpv6='disabled'
+set dhcp.lan.ra='server'
+set dhcp.lan.ra_slaac='1'
+set dhcp.lan.max_preferred_lifetime='2700'
+set dhcp.lan.max_valid_lifetime='5400'
+delete dhcp.lan.ignore
+
+set network.br_lan=device
+set network.br_lan.name='br-lan'
+set network.br_lan.type='bridge'
+
+set network.wan=interface
+set network.wan.proto='dhcp'
+
+set network.wan6=interface
+set network.wan6.proto='dhcpv6'
+
+set network.2_1=interface
+set network.2_1.modem_config='2_1'
+set network.2_1.proto='dhcp'
+set network.2_1.metric='11'
+set network.2_1.ifname='wwan0_1'
+set network.2_1.device='wwan0_1'
+
+set network.2_1v6=interface
+set network.2_1v6.modem_config='2_1'
+set network.2_1v6.proto='dhcpv6'
+set network.2_1v6.metric='11'
+EOC
+
+# ------------------------------------------------------------
+# Firewall: old firmware compatible
+# ------------------------------------------------------------
+uci -q batch <<'EOC'
+set firewall.@zone[0].name='lan'
+set firewall.@zone[0].network='lan'
+set firewall.@zone[0].input='ACCEPT'
+set firewall.@zone[0].output='ACCEPT'
+set firewall.@zone[0].forward='ACCEPT'
+
+set firewall.@zone[1].name='wan'
+delete firewall.@zone[1].network
+add_list firewall.@zone[1].network='wan'
+add_list firewall.@zone[1].network='wan6'
+add_list firewall.@zone[1].network='2_1'
+add_list firewall.@zone[1].network='2_1v6'
+set firewall.@zone[1].input='REJECT'
+set firewall.@zone[1].output='ACCEPT'
+set firewall.@zone[1].forward='REJECT'
+set firewall.@zone[1].masq='1'
+set firewall.@zone[1].mtu_fix='1'
+EOC
+
+# Ensure lan -> wan forwarding exists
+if ! uci -q show firewall | grep -q "src='lan'.*dest='wan'"; then
+    uci -q add firewall forwarding >/dev/null
+    uci -q set firewall.@forwarding[-1].src='lan'
+    uci -q set firewall.@forwarding[-1].dest='wan'
+fi
+
+# ------------------------------------------------------------
+# WiFi: old firmware compatible
+# ------------------------------------------------------------
+uci -q batch <<'EOC'
+set wireless.MT7981_1_1=wifi-device
+set wireless.MT7981_1_1.type='mtwifi'
+set wireless.MT7981_1_1.phy='ra0'
+set wireless.MT7981_1_1.hwmode='11g'
+set wireless.MT7981_1_1.band='2g'
+set wireless.MT7981_1_1.dbdc_main='1'
+set wireless.MT7981_1_1.channel='auto'
+set wireless.MT7981_1_1.txpower='100'
+set wireless.MT7981_1_1.htmode='HE40'
+set wireless.MT7981_1_1.country='CN'
+set wireless.MT7981_1_1.mu_beamformer='1'
+set wireless.MT7981_1_1.noscan='1'
+set wireless.MT7981_1_1.serialize='1'
+
+set wireless.default_MT7981_1_1=wifi-iface
+set wireless.default_MT7981_1_1.device='MT7981_1_1'
+set wireless.default_MT7981_1_1.network='lan'
+set wireless.default_MT7981_1_1.mode='ap'
+set wireless.default_MT7981_1_1.ssid='Airpi-2.4G'
+set wireless.default_MT7981_1_1.encryption='none'
+
+set wireless.MT7981_1_2=wifi-device
+set wireless.MT7981_1_2.type='mtwifi'
+set wireless.MT7981_1_2.phy='rax0'
+set wireless.MT7981_1_2.hwmode='11a'
+set wireless.MT7981_1_2.band='5g'
+set wireless.MT7981_1_2.dbdc_main='0'
+set wireless.MT7981_1_2.channel='36'
+set wireless.MT7981_1_2.txpower='100'
+set wireless.MT7981_1_2.htmode='VHT80'
+set wireless.MT7981_1_2.country='DE'
+set wireless.MT7981_1_2.mu_beamformer='1'
+set wireless.MT7981_1_2.noscan='0'
+set wireless.MT7981_1_2.serialize='1'
+set wireless.MT7981_1_2.disabled='0'
+
+set wireless.default_MT7981_1_2=wifi-iface
+set wireless.default_MT7981_1_2.device='MT7981_1_2'
+set wireless.default_MT7981_1_2.network='lan'
+set wireless.default_MT7981_1_2.mode='ap'
+set wireless.default_MT7981_1_2.ssid='Airpi-5G'
+set wireless.default_MT7981_1_2.encryption='psk2'
+set wireless.default_MT7981_1_2.key='1234567890'
+set wireless.default_MT7981_1_2.disabled='0'
+set wireless.default_MT7981_1_2.hidden='0'
+EOC
+
+# ------------------------------------------------------------
+# QModem: old firmware compatible 2_1 profile
+# ------------------------------------------------------------
+uci -q batch <<'EOC'
+set qmodem.main=main
+set qmodem.main.enable_dial='1'
+set qmodem.main.try_preset_usb='1'
+set qmodem.main.try_preset_pcie='1'
+set qmodem.main.enable_pcie_scan='1'
+set qmodem.main.start_delay='0'
+set qmodem.main.modem_count='1'
+
+set qmodem.2_1=modem-device
+set qmodem.2_1.path='/sys/bus/usb/devices/2-1/'
+set qmodem.2_1.data_interface='usb'
+set qmodem.2_1.enable_dial='1'
+set qmodem.2_1.soft_reboot='1'
+set qmodem.2_1.extend_prefix='1'
+set qmodem.2_1.pdp_type='ipv4v6'
+set qmodem.2_1.state='enabled'
+set qmodem.2_1.metric='11'
+set qmodem.2_1.name='rg520f-eb'
+set qmodem.2_1.network='wwan0'
+set qmodem.2_1.manufacturer='quectel'
+set qmodem.2_1.platform='qualcomm'
+set qmodem.2_1.wcdma_band='1/5/8'
+set qmodem.2_1.lte_band='1/3/5/7/8/20/28/32/38/40/41/42/43/71'
+set qmodem.2_1.nsa_band='1/3/5/7/8/20/28/38/40/41/71/75/76/77/78'
+set qmodem.2_1.sa_band='1/3/5/7/8/20/28/38/40/41/71/75/76/77/78'
+set qmodem.2_1.at_port='/dev/ttyUSB2'
+set qmodem.2_1.valid_at_ports='/dev/ttyUSB2'
+
+delete qmodem.2_1.modes
+add_list qmodem.2_1.modes='qmi'
+add_list qmodem.2_1.modes='gobinet'
+add_list qmodem.2_1.modes='ecm'
+add_list qmodem.2_1.modes='mbim'
+add_list qmodem.2_1.modes='rndis'
+add_list qmodem.2_1.modes='ncm'
+
+delete qmodem.2_1.ports
+add_list qmodem.2_1.ports='/dev/ttyUSB0'
+add_list qmodem.2_1.ports='/dev/ttyUSB1'
+add_list qmodem.2_1.ports='/dev/ttyUSB2'
+add_list qmodem.2_1.ports='/dev/ttyUSB3'
+EOC
+
+# ------------------------------------------------------------
+# Enable old firmware style services where available
+# ------------------------------------------------------------
+for svc in dnsmasq firewall network eqos qmodem qmodem_init turboacc qmodem_reboot qmodem_network airpi-qmodem-autostart ttyd; do
+    if [ -x "/etc/init.d/$svc" ]; then
+        /etc/init.d/"$svc" enable >/dev/null 2>&1 || true
+    fi
+done
+
+uci commit system
+uci commit network
+uci commit dhcp
+uci commit firewall
+uci commit wireless
+uci commit qmodem 2>/dev/null || true
+
+rm -f /etc/uci-defaults/99-airpi-oldfw-network
+exit 0
