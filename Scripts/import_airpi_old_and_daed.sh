@@ -61,32 +61,53 @@ copy_pkg "wrtbwmon"
 copy_pkg "luci-app-wrtbwmon"
 
 
-echo "===== Airpi import: relocate Airpi GPIO fan kernel package ====="
+echo "===== Airpi import: relocate and preflight Airpi GPIO fan kernel package ====="
 mkdir -p package/kernel
 rm -rf package/kernel/Airpi-gpio-fan
 
-if [ -d "package/kernel/Airpi-gpio-fan" ]; then
-  mv "package/kernel/Airpi-gpio-fan" package/kernel/Airpi-gpio-fan
+FAN_SRC=""
+
+if [ -f "package/kernel/Airpi-gpio-fan/Makefile" ]; then
+  FAN_SRC="package/kernel/Airpi-gpio-fan"
+else
+  FAN_MK="$(find "package/kernel/Airpi-gpio-fan" "$DST_DIR/luci-app-Airpifanctrl" -path "*/Airpi-gpio-fan/Makefile" 2>/dev/null | head -n1 || true)"
+  [ -n "$FAN_MK" ] && FAN_SRC="$(dirname "$FAN_MK")"
 fi
 
-if [ ! -f package/kernel/Airpi-gpio-fan/Makefile ]; then
-  FAN_ZIP="$(find "$DST_DIR/luci-app-Airpifanctrl" -type f -iname "*Airpi*gpi*fan*.zip" -o -iname "*Airpi-gpio-fan*.zip" 2>/dev/null | head -n1 || true)"
+if [ -z "$FAN_SRC" ]; then
+  FAN_ZIP="$(find "$DST_DIR/luci-app-Airpifanctrl" -type f \( -iname "*Airpi*gpi*fan*.zip" -o -iname "*Airpi-gpio-fan*.zip" -o -iname "*fan*.zip" \) 2>/dev/null | head -n1 || true)"
   if [ -n "$FAN_ZIP" ]; then
     TMP_FAN="/tmp/airpi-gpio-fan-unzip"
     rm -rf "$TMP_FAN"
     mkdir -p "$TMP_FAN"
     unzip -q "$FAN_ZIP" -d "$TMP_FAN"
-    FAN_MK="$(find "$TMP_FAN" -path "*/Airpi-gpio-fan/Makefile" | head -n1 || true)"
-    if [ -n "$FAN_MK" ]; then
-      cp -a "$(dirname "$FAN_MK")" package/kernel/Airpi-gpio-fan
-    fi
+    FAN_MK="$(find "$TMP_FAN" -path "*/Airpi-gpio-fan/Makefile" 2>/dev/null | head -n1 || true)"
+    [ -n "$FAN_MK" ] && FAN_SRC="$(dirname "$FAN_MK")"
   fi
 fi
 
-if [ ! -f package/kernel/Airpi-gpio-fan/Makefile ]; then
-  echo "ERROR: package/kernel/Airpi-gpio-fan/Makefile not found"
+if [ -z "$FAN_SRC" ]; then
+  echo "ERROR: cannot find Airpi-gpio-fan Makefile after import"
+  echo "DEBUG: candidate files:"
+  find "$DST_DIR" -maxdepth 6 \( -iname "*fan*" -o -iname "*Airpi*" -o -iname "*.zip" \) 2>/dev/null || true
   exit 1
 fi
+
+cp -a "$FAN_SRC" package/kernel/Airpi-gpio-fan
+
+if ! grep -q "KernelPackage/Airpi-gpio-fan" package/kernel/Airpi-gpio-fan/Makefile; then
+  echo "ERROR: package/kernel/Airpi-gpio-fan/Makefile is not KernelPackage/Airpi-gpio-fan"
+  sed -n "1,160p" package/kernel/Airpi-gpio-fan/Makefile || true
+  exit 1
+fi
+
+if [ ! -f "$DST_DIR/luci-app-Airpifanctrl/Makefile" ]; then
+  echo "ERROR: luci-app-Airpifanctrl/Makefile not found"
+  find "$DST_DIR/luci-app-Airpifanctrl" -maxdepth 4 -type f 2>/dev/null || true
+  exit 1
+fi
+
+echo "OK: Airpi fan kernel package preflight passed"
 
 echo "===== Airpi import: hard block unwanted packages from copied tree ====="
 find "$DST_DIR" -maxdepth 2 -type d | grep -Ei 'openclash|istore|store|aurora' && {

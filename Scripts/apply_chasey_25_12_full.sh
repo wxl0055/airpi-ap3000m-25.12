@@ -53,6 +53,7 @@ cat >> .config <<'EOF'
 CONFIG_TARGET_mediatek=y
 CONFIG_TARGET_mediatek_filogic=y
 CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y
+CONFIG_CCACHE=y
 CONFIG_PACKAGE_luci-app-firewall=y
 CONFIG_PACKAGE_luci-compat=y
 CONFIG_PACKAGE_luci-base=y
