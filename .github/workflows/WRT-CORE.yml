@@ -194,6 +194,8 @@ jobs:
 
           make defconfig -j$(nproc) && make clean -j$(nproc)
 
+      - name: Apply Airpi WiFi/WAPP runtime fix
+        run: bash $GITHUB_WORKSPACE/Scripts/airpi_wifi_wapp_fix.sh
       - name: Download Packages
         if: env.WRT_TEST != 'true'
         run: |
