@@ -4,7 +4,6 @@ CONFIG_PACKAGE_luci-app-ssr-plus=n
 # CONFIG_PACKAGE_luci-app-homeproxy=y
 # CONFIG_PACKAGE_luci-app-momo=y
 # CONFIG_PACKAGE_luci-app-nikki=y
-CONFIG_PACKAGE_luci-app-openclash=y
 
 # passwall编译
 # CONFIG_PACKAGE_luci-app-passwall=y
@@ -45,8 +44,6 @@ CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_SingBox=y
 CONFIG_PACKAGE_luci-app-passwall2_INCLUDE_V2ray_Plugin=y
 
 #增加插件
-CONFIG_PACKAGE_luci-app-store=y
-CONFIG_PACKAGE_luci-app-istorex=y
 CONFIG_PACKAGE_luci-app-quickstart=y
 #CONFIG_PACKAGE_luci-app-quickfile=y 
 CONFIG_PACKAGE_luci-app-netwizard=y 
