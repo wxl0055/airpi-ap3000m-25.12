@@ -45,6 +45,31 @@ jobs:
           echo "===== source commit ====="
           git log -1 --oneline
 
+      - name: Verify Airpi AP3000M DTS and image target
+        working-directory: wrt
+        run: |
+          echo "===== DTS file ====="
+          find target/linux/mediatek -name '*airpi*ap3000m*dts*' -print | tee /tmp/airpi_dts_files.txt
+
+          if ! grep -q 'mt7981b-airpi-ap3000m.dts' /tmp/airpi_dts_files.txt; then
+            echo "ERROR: mt7981b-airpi-ap3000m.dts not found"
+            exit 1
+          fi
+
+          echo
+          echo "===== DTS content ====="
+          grep -RInE 'model = "Airpi AP3000M"|compatible = "airpi,ap3000m"|mt7981b-airpi-ap3000m' target/linux/mediatek || {
+            echo "ERROR: Airpi AP3000M DTS content not found"
+            exit 1
+          }
+
+          echo
+          echo "===== image device definition ====="
+          grep -RInE 'DEVICE_.*airpi|airpi_ap3000m|mt7981b-airpi-ap3000m|Airpi AP3000M' target/linux/mediatek/image target/linux/mediatek || {
+            echo "ERROR: Airpi AP3000M image device definition not found"
+            exit 1
+          }
+
       - name: Copy Airpi overlay files
         run: |
           mkdir -p wrt/files
@@ -54,6 +79,17 @@ jobs:
         working-directory: wrt
         run: |
           bash "$GITHUB_WORKSPACE/Scripts/apply_chasey_25_12_full.sh"
+
+      - name: Verify selected Airpi AP3000M target config
+        working-directory: wrt
+        run: |
+          echo "===== final target config ====="
+          grep -E '^CONFIG_TARGET_mediatek=y$|^CONFIG_TARGET_mediatek_filogic=y$|^CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y$' .config || true
+
+          grep -q '^CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y$' .config || {
+            echo "ERROR: final .config did not select CONFIG_TARGET_mediatek_filogic_DEVICE_airpi_ap3000m=y"
+            exit 1
+          }
 
       - name: Download sources
         working-directory: wrt
