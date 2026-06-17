@@ -23,6 +23,8 @@ for d in \
   "${GITHUB_WORKSPACE:-}/openwrt" \
   "${GITHUB_WORKSPACE:-}/immortalwrt" \
   "${GITHUB_WORKSPACE:-}/source" \
+  "${GITHUB_WORKSPACE:-}/wrt" \
+  "/mnt/build_wrt" \
   "/workdir/openwrt" \
   "/workdir/immortalwrt" \
   "/workdir/source" \
@@ -43,7 +45,7 @@ if [ -z "$FIX_FILE" ]; then
   echo
   echo "=== Common paths not found, searching limited locations ==="
 
-  for d in "/workdir" "/home/runner/work" "${GITHUB_WORKSPACE:-}"; do
+  for d in "/mnt/build_wrt" "${GITHUB_WORKSPACE:-}/wrt" "/workdir" "/home/runner/work" "${GITHUB_WORKSPACE:-}"; do
     [ -n "$d" ] || continue
     [ -d "$d" ] || continue
 
