@@ -2,6 +2,9 @@ name: Airpi Chasey 25.12 QModem
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - airpi-chasey-25.12
   schedule:
     - cron: '18 20 * * *'
 
