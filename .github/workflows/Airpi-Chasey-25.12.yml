@@ -156,4 +156,20 @@ jobs:
             echo "ERROR: forbidden package found in manifest"
             exit 1
           fi
+      - name: Generate release tag
+        if: success()
+        id: release_tag
+        run: |
+          echo "tag=build-$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Airpi AP3000M ImmortalWrt 25.12 ${{ steps.release_tag.outputs.tag }}
+          files: release_files/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
 
