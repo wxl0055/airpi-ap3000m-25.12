@@ -146,7 +146,7 @@ jobs:
           fi
 
           echo "===== required packages ====="
-          grep -E 'luci-app-[Aa]irpifanctrl|kmod-[Aa]irpi-gpio-fan|luci-app-mtk|mii_mgr|switch|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|qmodem|luci-app-qmodem-next|daed|luci-app-daede' "$MANIFEST" || {
+          grep -E 'luci-app-[Aa]irpifanctrl|kmod-[Aa]irpi-gpio-fan|luci-app-mtk|mii_mgr|switch|luci-app-mtwifi-cfg|luci-app-eqos-mtk|luci-app-turboacc-mtk|qmodem|luci-app-qmodem-next' "$MANIFEST" || {
             echo "ERROR: required package missing from manifest"
             exit 1
           }

@@ -52,11 +52,6 @@ echo "===== feeds install: selected packages only ====="
   luci-app-qmodem-monitor luci-app-qmodem-sms luci-app-qmodem-mwan luci-app-qmodem-ttl luci-app-qmodem-ttlfw4 \
   || true
 
-./scripts/feeds install \
-  dae daed luci-app-dae luci-app-daed luci-app-daede \
-  dae-geoip dae-geosite daed-geoip daed-geosite \
-  || true
-
 echo "===== feeds install: selected packages done ====="
 
 
@@ -93,14 +88,14 @@ CONFIG_PACKAGE_luci-app-qmodem-next=y
 CONFIG_PACKAGE_luci-app-mtwifi-cfg=y
 CONFIG_PACKAGE_mtwifi-cfg-ucode=y
 
-# CONFIG_PACKAGE_luci-app-eqos-mtk is not set
+CONFIG_PACKAGE_luci-app-eqos-mtk=y
 CONFIG_PACKAGE_luci-app-turboacc-mtk=y
 CONFIG_PACKAGE_mii_mgr=y
 CONFIG_PACKAGE_lua-cjson=y
 CONFIG_PACKAGE_switch=y
 CONFIG_PACKAGE_regs=y
 CONFIG_PACKAGE_ndisc6=y
-# CONFIG_PACKAGE_mtkhqos_util is not set
+CONFIG_PACKAGE_mtkhqos_util=y
 CONFIG_PACKAGE_mtk-smp=y
 
 CONFIG_PACKAGE_luci-app-Airpifanctrl=y
@@ -123,6 +118,10 @@ CONFIG_PACKAGE_luci-app-xfrpc=y
 CONFIG_PACKAGE_luci-app-argon-config=y
 CONFIG_PACKAGE_luci-theme-argon=y
 CONFIG_PACKAGE_luci-theme-bootstrap=y
+CONFIG_KERNEL_CGROUP_BPF=y
+CONFIG_KERNEL_CGROUPS=y
+CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
+CONFIG_DEVEL=y
 
 CONFIG_PACKAGE_ca-bundle=y
 CONFIG_PACKAGE_kmod-sched-core=y
@@ -130,9 +129,9 @@ CONFIG_PACKAGE_kmod-sched-bpf=y
 CONFIG_PACKAGE_kmod-veth=y
 CONFIG_PACKAGE_kmod-xdp-sockets-diag=y
 CONFIG_PACKAGE_kmod-nft-tproxy=y
-CONFIG_PACKAGE_dae=y
-CONFIG_PACKAGE_daed=y
-CONFIG_PACKAGE_luci-app-daede=y
+# CONFIG_PACKAGE_dae=y is not set
+# CONFIG_PACKAGE_daed=y is not set
+# CONFIG_PACKAGE_luci-app-daede=y is not set
 
 CONFIG_KERNEL_BPF_EVENTS=y
 CONFIG_KERNEL_KPROBE_EVENTS=y
@@ -172,10 +171,9 @@ for sym in \
   CONFIG_PACKAGE_kmod-Airpi-gpio-fan \
   CONFIG_PACKAGE_luci-app-mtk \
   CONFIG_PACKAGE_luci-app-mtwifi-cfg \
+  CONFIG_PACKAGE_luci-app-eqos-mtk \
   CONFIG_PACKAGE_luci-app-turboacc-mtk \
   CONFIG_PACKAGE_luci-app-qmodem-next \
-  CONFIG_PACKAGE_daed \
-  CONFIG_PACKAGE_luci-app-daede
 do
   if ! grep -q "^${sym}=y$" .config; then
     echo "ERROR: required config not enabled: ${sym}"

@@ -39,17 +39,8 @@ copy_pkg() {
 
 # Airpi hardware / fan
 # MTK management / switch / low-level tools
-copy_pkg "luci-app-mtk"
-copy_pkg "mii_mgr"
-copy_pkg "switch"
-copy_pkg "regs"
-copy_pkg "ndisc"
 
 # MTK WiFi / acceleration / QoS
-copy_pkg "mtwifi-cfg"
-copy_pkg "luci-app-mtwifi-cfg"
-copy_pkg "luci-app-turboacc-mtk"
-copy_pkg "mtk-smp"
 
 # Traffic accounting from old package set
 copy_pkg "wrtbwmon"
@@ -170,12 +161,6 @@ echo "===== Airpi import: required package directories check ====="
 for d in \
   "package/kernel/Airpi-gpio-fan" \
   "$DST_DIR/luci-app-Airpifanctrl" \
-  "$DST_DIR/luci-app-mtk" \
-  "$DST_DIR/mii_mgr" \
-  "$DST_DIR/switch" \
-  "$DST_DIR/mtwifi-cfg" \
-  "$DST_DIR/luci-app-mtwifi-cfg" \
-  "$DST_DIR/luci-app-turboacc-mtk" \
   "$DST_DIR/wrtbwmon" \
   "$DST_DIR/luci-app-wrtbwmon"
 do
