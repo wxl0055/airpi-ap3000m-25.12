@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - airpi-chasey-25.12
   schedule:
     # 北京时间每天早上 04:18 = UTC 前一天 20:18
     - cron: '18 20 * * *'
