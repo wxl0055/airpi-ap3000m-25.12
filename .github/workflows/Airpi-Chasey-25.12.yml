@@ -173,3 +173,38 @@ jobs:
           prerelease: false
           generate_release_notes: true
 
+
+      - name: Collect firmware files
+        if: success()
+        run: |
+          mkdir -p release_files
+          if [ -d ./bin/targets ]; then
+            find ./bin/targets -type f \( -name "*.bin" -o -name "*.itb" -o -name "*.img" -o -name "sha256sums" \) -exec cp -f {} release_files/ \; || true
+          fi
+          ls -lah release_files || true
+
+      - name: Upload artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: airpi-ap3000m-25.12-${{ github.run_number }}
+          path: release_files/*
+          if-no-files-found: error
+
+      - name: Generate release tag
+        if: success()
+        id: release_tag
+        run: |
+          echo "tag=build-$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: Airpi AP3000M ImmortalWrt 25.12 ${{ steps.release_tag.outputs.tag }}
+          files: release_files/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
