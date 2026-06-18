@@ -107,17 +107,6 @@ jobs:
             exit 1
           }
 
-      - name: Debug mtkhqos_util single package
-        working-directory: wrt
-        run: |
-          echo "===== mtkhqos_util package tree ====="
-          find package/airpi-mtk-applications/mtkhqos_util -maxdepth 3 -type f -print || true
-          echo "===== mtkhqos_util Makefile ====="
-          sed -n "1,220p" package/airpi-mtk-applications/mtkhqos_util/Makefile || true
-          echo "===== compile mtkhqos_util only ====="
-          make package/airpi-mtk-applications/mtkhqos_util/clean V=s || true
-          make package/airpi-mtk-applications/mtkhqos_util/compile V=s -j1
-
       - name: Download sources
         working-directory: wrt
         run: |
@@ -157,7 +146,7 @@ jobs:
           fi
 
           echo "===== required packages ====="
-          grep -E 'luci-app-[Aa]irpifanctrl|kmod-[Aa]irpi-gpio-fan|luci-app-mtk|mii_mgr|switch|luci-app-mtwifi-cfg|luci-app-eqos-mtk|luci-app-turboacc-mtk|qmodem|luci-app-qmodem-next|daed|luci-app-daede' "$MANIFEST" || {
+          grep -E 'luci-app-[Aa]irpifanctrl|kmod-[Aa]irpi-gpio-fan|luci-app-mtk|mii_mgr|switch|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|qmodem|luci-app-qmodem-next|daed|luci-app-daede' "$MANIFEST" || {
             echo "ERROR: required package missing from manifest"
             exit 1
           }

@@ -48,9 +48,7 @@ copy_pkg "ndisc"
 # MTK WiFi / acceleration / QoS
 copy_pkg "mtwifi-cfg"
 copy_pkg "luci-app-mtwifi-cfg"
-copy_pkg "luci-app-eqos-mtk"
 copy_pkg "luci-app-turboacc-mtk"
-copy_pkg "mtkhqos_util"
 copy_pkg "mtk-smp"
 
 # Traffic accounting from old package set
@@ -177,7 +175,6 @@ for d in \
   "$DST_DIR/switch" \
   "$DST_DIR/mtwifi-cfg" \
   "$DST_DIR/luci-app-mtwifi-cfg" \
-  "$DST_DIR/luci-app-eqos-mtk" \
   "$DST_DIR/luci-app-turboacc-mtk" \
   "$DST_DIR/wrtbwmon" \
   "$DST_DIR/luci-app-wrtbwmon"
