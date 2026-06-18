@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - airpi-chasey-25.12
   schedule:
+    # 北京时间每天早上 04:18 = UTC 前一天 20:18
     - cron: '18 20 * * *'
 
 permissions:
@@ -122,16 +124,18 @@ jobs:
         run: |
           mkdir -p artifact
           if [ -d wrt/bin/targets ]; then
-            find wrt/bin/targets -type f \( -name '*.bin' -o -name '*.img' -o -name '*.itb' -o -name '*.manifest' -o -name '*.buildinfo' -o -name '*.json' \) -print -exec cp -f {} artifact/ \;
+            find wrt/bin/targets -type f \( -name '*.bin' -o -name '*.img' -o -name '*.itb' -o -name '*.manifest' -o -name '*.buildinfo' -o -name '*.json' -o -name 'sha256sums' \) -print -exec cp -f {} artifact/ \;
           fi
           echo "===== artifact files ====="
           ls -lah artifact || true
 
       - name: Upload firmware artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Airpi-qmodem-chasey-25.12
           path: artifact/
+          if-no-files-found: error
 
       - name: Verify Airpi package manifest
         if: always()
@@ -156,40 +160,16 @@ jobs:
             echo "ERROR: forbidden package found in manifest"
             exit 1
           fi
-      - name: Generate release tag
-        if: success()
-        id: release_tag
-        run: |
-          echo "tag=build-$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub Release
-        if: success()
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.release_tag.outputs.tag }}
-          name: Airpi AP3000M ImmortalWrt 25.12 ${{ steps.release_tag.outputs.tag }}
-          files: release_files/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-
-
-      - name: Collect firmware files
+      - name: Prepare release files
         if: success()
         run: |
           mkdir -p release_files
-          if [ -d ./bin/targets ]; then
-            find ./bin/targets -type f \( -name "*.bin" -o -name "*.itb" -o -name "*.img" -o -name "sha256sums" \) -exec cp -f {} release_files/ \; || true
+          if [ -d artifact ]; then
+            find artifact -maxdepth 1 -type f \( -name '*.bin' -o -name '*.img' -o -name '*.itb' -o -name '*.manifest' -o -name '*.buildinfo' -o -name '*.json' -o -name 'sha256sums' \) -exec cp -f {} release_files/ \; || true
           fi
+          echo "===== release files ====="
           ls -lah release_files || true
-
-      - name: Upload artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: airpi-ap3000m-25.12-${{ github.run_number }}
-          path: release_files/*
-          if-no-files-found: error
 
       - name: Generate release tag
         if: success()
@@ -207,4 +187,3 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-
