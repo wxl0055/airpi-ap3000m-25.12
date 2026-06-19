@@ -1,5 +1,41 @@
 # Airpi AP3000M ImmortalWrt 25.12
 
+## 近期两次关键修复
+
+### 1. 风扇控制修复
+已将 Airpi AP3000M 风扇控制逻辑按实机验证结果固化为新的运行时方案。
+
+**问题表现：**
+- 旧插件会写错 PWM 节点；
+- 缺少默认配置文件；
+- 固定模式与智能模式可能互相覆盖；
+- 临时热修脚本会和正式逻辑冲突；
+- 内核 thermal 会自动接管 pwm-fan，导致手动档位被拉回。
+
+**解决思路：**
+- 默认模式改为 **智能模式**；
+- 默认温度来源改为 **CPU 温度**；
+- 统一使用 `fan-write-duty`、`airpi-fan-set`、`fancts.sh` 这套运行链；
+- 禁用 `thermal_zone0/mode` 对 PWM 风扇的自动接管；
+- 保留模组温度作为备用能力，但不默认启用。
+
+### 2. LAN 拔线后网络异常修复
+已确认 LAN 网线拔掉后 Wi‑Fi / DNS / SSH / daed 异常的根因不在 DNS，也不在 daed，而是在新版 HNAT 自动检测逻辑。
+
+**问题根因：**
+- `hnat-detect` 会把 `wwan0_1` 识别为 ext device；
+- 自动创建 `rxppd` 并挂入 `br-lan`；
+- 在 `eth0` 拔线后，`rxppd + br-lan + HNAT` 状态异常；
+- 导致 DNS 回包虽已到达，但应用层链路表现异常。
+
+**解决思路：**
+- 保留 **HNAT / WARP / TurboACC**；
+- 禁用 `hnat-detect` 的自动 hotplug / ucode 逻辑；
+- 防止 `rxppd` 自动挂入 `br-lan`；
+- 目标不是关闭加速，而是移除错误的自动桥接逻辑，恢复稳定网络行为。
+
+
+
 Airpi AP3000M 专用的自定义 ImmortalWrt 25.12 固件项目。
 
 本项目已经作为独立仓库维护，后续所有修改、构建和发布均以本仓库为准，不再作为旧项目分支使用。
